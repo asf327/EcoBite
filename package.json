@@ -1,0 +1,33 @@
+{
+  "name": "ecobite",
+  "version": "1.0.0",
+  "description": "EcoBite is a Lehigh-focused dining recommendation app that helps students make more sustainable food choices using daily campus menus, nutrition facts, and evidence-based environmental impact estimates.",
+  "main": "rathbone_auto_classification.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test:scoring": "node test.js",
+    "fetch:rathbone": "python3 scripts/fetch_rathbone_menu.py"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/asf327/EcoBite.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/asf327/EcoBite/issues"
+  },
+  "homepage": "https://github.com/asf327/EcoBite#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "google-auth-library": "^10.6.2",
+    "node-cron": "^4.2.1"
+  }
+}

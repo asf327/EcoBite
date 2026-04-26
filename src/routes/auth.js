@@ -1,0 +1,106 @@
+const express = require("express");
+const bcrypt = require("bcryptjs");
+const { OAuth2Client } = require("google-auth-library");
+const { db } = require("../db/db");
+
+const router = express.Router();
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+function createOrGetUser({ googleId = null, email, name, passwordHash = null }) {
+  db.prepare(`
+    INSERT OR IGNORE INTO users (google_id, email, name, password_hash)
+    VALUES (?, ?, ?, ?)
+  `).run(googleId, email, name, passwordHash);
+
+  return db.prepare(`
+    SELECT id, google_id, email, name, created_at
+    FROM users
+    WHERE email = ?
+  `).get(email);
+}
+
+router.post("/signup", async (req, res) => {
+  try {
+    const { email, name, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required." });
+    }
+
+    const existing = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+
+    if (existing) {
+      return res.status(409).json({ error: "User already exists." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const user = createOrGetUser({
+      email,
+      name: name || email,
+      passwordHash
+    });
+
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+
+    if (!user || !user.password_hash) {
+      return res.status(401).json({ error: "Invalid login." });
+    }
+
+    const valid = await bcrypt.compare(password, user.password_hash);
+
+    if (!valid) {
+      return res.status(401).json({ error: "Invalid login." });
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post("/google", async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    if (!credential) {
+      return res.status(400).json({ error: "Missing Google credential." });
+    }
+
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+
+    const user = createOrGetUser({
+      googleId: payload.sub,
+      email: payload.email,
+      name: payload.name || payload.email
+    });
+
+    res.json({ user });
+  } catch (error) {
+    res.status(401).json({ error: "Google sign-in failed." });
+  }
+});
+
+module.exports = router;

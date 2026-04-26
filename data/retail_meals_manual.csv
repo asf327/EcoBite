@@ -1,0 +1,17 @@
+location_name,location_type,meal_name,description,category,calories,protein_g,fiber_g,sodium_mg,sat_fat_g,added_sugar_g,diet_tags,allergen_tags,official_nutrition_source,status,notes
+Common Grounds,retail,Turkey Avocado Sandwich,Cold sandwich with turkey avocado greens and tomato,sandwich,,,,,,,,"","official retail nutrition link needed",draft,Replace nutrition with official Lehigh retail nutrition data
+Common Grounds,retail,House Salad with Chickpeas,Greens vegetables chickpeas and vinaigrette,salad,,,,,,,vegan;plantbased,,"official retail nutrition link needed",draft,Good candidate for lower-impact retail recommendation
+Hawk's Nest,retail,Buffalo Chicken Wrap,Chicken wrap with lettuce tomato and buffalo sauce,wrap,,,,,,,,"","official retail nutrition link needed",draft,Use as higher-protein retail benchmark
+Hawk's Nest,retail,Veggie Flatbread,Flatbread with vegetables and cheese,flatbread,,,,,,,vegetarian,,"official retail nutrition link needed",draft,Check dairy content before scoring
+The Hearth,retail,Cheese Pizza Slice,Slice of cheese pizza,pizza,,,,,,,vegetarian,milk;wheat,"official retail nutrition link needed",draft,Useful for pizza swap comparisons
+The Hearth,retail,Marinara Pasta Bowl,Pasta with marinara sauce,pasta,,,,,,,vegan;plantbased,wheat,"official retail nutrition link needed",draft,Potential lower-impact pasta option
+The Grind @ FML,retail,Greek Yogurt Parfait,Yogurt parfait with fruit and granola,breakfast,,,,,,,vegetarian,milk;wheat,"official retail nutrition link needed",draft,Good breakfast comparison item
+The Grind @ FML,retail,Hummus Veggie Sandwich,Sandwich with hummus cucumbers peppers and greens,sandwich,,,,,,,vegan;plantbased,wheat,"official retail nutrition link needed",draft,Potential plant-forward retail pick
+Iacocca Cafe,retail,Chicken Caesar Wrap,Chicken wrap with romaine parmesan and Caesar dressing,wrap,,,,,,,,"milk;wheat","official retail nutrition link needed",draft,Use for moderate-impact baseline
+Iacocca Cafe,retail,Lentil Soup,Lentil soup with vegetables,soup,,,,,,,vegan;plantbased,,"official retail nutrition link needed",draft,Strong sustainable option if officially listed
+Hideaway Cafe,retail,Caprese Panini,Panini with mozzarella tomato and basil,panini,,,,,,,vegetarian,milk;wheat,"official retail nutrition link needed",draft,Check exact nutrition from official source
+South Mountain Grill and Deli,retail,Black Bean Burger,Black bean burger with lettuce tomato and bun,burger,,,,,,,vegetarian;plantbased,wheat;soy,"official retail nutrition link needed",draft,Useful lower-impact burger-format option
+Leaf & Ladle,retail,Southwest Grain Bowl,Grain bowl with beans corn greens and salsa,bowl,,,,,,,vegan;plantbased,,"official retail nutrition link needed",draft,Good candidate for sustainability scoring
+Kalamata,retail,Falafel Bowl,Falafel rice greens cucumber tomato tahini,bowl,,,,,,,vegetarian;plantbased,sesame,"official retail nutrition link needed",draft,Check if menu item exists in current retail lineup
+Asa's Place,retail,Chicken Rice Bowl,Chicken with rice and vegetables,bowl,,,,,,,,"","official retail nutrition link needed",draft,Use as small-change comparison item
+Simple Servings at the UC,retail,Build Your Own Burrito Bowl,Rice beans vegetables salsa and chosen protein,bowl,,,,,,,gluten_free,,"official retail nutrition link needed",draft,Retail Simple Servings is mentioned on Lehigh nutrition page
