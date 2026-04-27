@@ -104,6 +104,46 @@ function classifyRetailMeal(itemName = "", description = "") {
   }
 
   if (
+    text.includes("beef patty") ||
+    text.includes("grilled chicken") ||
+    text.includes("crispy chicken") ||
+    text.includes("pulled pork") ||
+    text.includes("mac & cheese") ||
+    text.includes("mozzarella sticks")
+  ) {
+    let proteinCategory = "Other Pulses";
+    let secondaryCategory = "Other Vegetables";
+
+    if (text.includes("beef patty")) {
+      proteinCategory = "Beef (beef herd)";
+      secondaryCategory = "Wheat & Rye";
+    } else if (
+      text.includes("grilled chicken") ||
+      text.includes("crispy chicken")
+    ) {
+      proteinCategory = "Poultry Meat";
+      secondaryCategory = "Other Vegetables";
+    } else if (text.includes("pulled pork")) {
+      proteinCategory = "Pig Meat";
+      secondaryCategory = "Other Vegetables";
+    } else if (
+      text.includes("mac & cheese") ||
+      text.includes("mozzarella sticks")
+    ) {
+      proteinCategory = "Cheese";
+      secondaryCategory = "Wheat & Rye";
+    }
+
+    return {
+      type: "single_item",
+      components: [
+        { category: proteinCategory, weightFraction: 0.7 },
+        { category: secondaryCategory, weightFraction: 0.3 }
+      ]
+    };
+  }
+
+  if (
     text.includes("bagel") ||
     text.includes("croissant") ||
     text.includes("muffin") ||

@@ -351,28 +351,38 @@ export default function App() {
   if (screen === "landing") {
     return (
       <main className="app-shell landing-bg">
-        <section className="landing-content">
-          <div className="logo-row">
-            <div className="logo-circle">
-              <Leaf size={28} />
+        <section className="auth-layout landing-layout">
+          <aside className="auth-intro landing-intro">
+            <div className="logo-row">
+              <div className="logo-circle">
+                <Leaf size={28} />
+              </div>
+              <h1>EcoBite</h1>
             </div>
-            <h1>EcoBite</h1>
-          </div>
+            <p className="eyebrow">Lehigh dining, made clearer</p>
+            <h2>Choose meals that fit your goals without guessing.</h2>
+            <p>
+              Compare sustainability and nutrition scores, save favorites, and get
+              recommendations shaped around the changes you actually want to make.
+            </p>
+            <div className="auth-visual" aria-hidden="true">
+              <div className="auth-visual-main">🥗</div>
+              <div className="auth-visual-chip auth-visual-chip-top">Eco Score 92</div>
+              <div className="auth-visual-chip auth-visual-chip-bottom">Nutrition 88</div>
+            </div>
+          </aside>
 
-          <h2>Eat well. Do good.</h2>
+          <section className="auth-card landing-card">
+            <p className="small-muted">Personalized meal recommendations for healthier, lower-impact dining.</p>
 
-          <p>
-            Personalized meal recommendations that are healthy, sustainable,
-            and easy to choose.
-          </p>
+            <button className="primary-btn" onClick={() => setScreen("auth")}>
+              Get Started
+            </button>
 
-          <button className="primary-btn" onClick={() => setScreen("auth")}>
-            Get Started
-          </button>
-
-          <button className="secondary-btn" onClick={() => setScreen("auth")}>
-            Sign In
-          </button>
+            <button className="secondary-btn" onClick={() => setScreen("auth")}>
+              Sign In
+            </button>
+          </section>
         </section>
       </main>
     );

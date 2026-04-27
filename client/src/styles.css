@@ -581,6 +581,24 @@ button {
   background: white;
 }
 
+.landing-layout {
+  width: 100%;
+}
+
+.landing-intro .logo-row {
+  margin-bottom: 18px;
+}
+
+.landing-card {
+  justify-content: center;
+}
+
+.landing-card .small-muted {
+  margin-bottom: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .divider {
   text-align: center;
   color: var(--muted);
@@ -692,6 +710,15 @@ button:disabled {
     max-width: 1120px;
     min-height: calc(100vh - 180px);
     margin: 24px auto 0;
+  }
+
+  .landing-layout {
+    min-height: calc(100vh - 180px);
+  }
+
+  .landing-card {
+    max-width: 460px;
+    align-self: center;
   }
 
   .auth-intro,
