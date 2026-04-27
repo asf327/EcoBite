@@ -140,19 +140,8 @@ export default function App() {
     }
   }
 
-  async function updatePreferences(nextPreferences) {
+  function updatePreferences(nextPreferences) {
     setPreferences(nextPreferences);
-
-    if (!user) return;
-
-    await fetch(`${API_BASE}/users/${user.id}/preferences`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(nextPreferences)
-    });
-
   }
 
   async function loadUserPreferences(userId) {
@@ -224,6 +213,52 @@ export default function App() {
     await finishAuth(data);
   }
 
+  async function fetchRecommendationsData(locationSlug, prefs) {
+    const params = new URLSearchParams({
+      location: locationSlug,
+      userId: String(user.id),
+      limit: "500",
+      ...buildPreferenceParams(prefs)
+    });
+    const res = await fetch(`${API_BASE}/recommendations?${params.toString()}`);
+
+    if (!res.ok) {
+      throw new Error(`Recommendation request failed: ${res.status}`);
+    }
+
+    const data = await res.json();
+    let nextAllMeals = sortMealsAlphabetically(data.recommendations || []);
+
+    if (locationSlug === "rathbone") {
+      const allParams = new URLSearchParams({
+        location: locationSlug,
+        userId: String(user.id),
+        view: "all",
+        limit: "500",
+        ...buildPreferenceParams(prefs)
+      });
+      const allRes = await fetch(`${API_BASE}/recommendations?${allParams.toString()}`);
+
+      if (!allRes.ok) {
+        throw new Error(`All meals request failed: ${allRes.status}`);
+      }
+
+      const allData = await allRes.json();
+      nextAllMeals = allData.recommendations || [];
+    }
+
+    return {
+      recommendations: data.recommendations || [],
+      allMeals: nextAllMeals
+    };
+  }
+
+  async function hydrateRecommendations(locationSlug, prefs) {
+    const data = await fetchRecommendationsData(locationSlug, prefs);
+    setRecommendations(data.recommendations);
+    setAllMeals(data.allMeals);
+  }
+
   async function savePreferences() {
     if (!user) {
       setScreen("auth");
@@ -237,6 +272,14 @@ export default function App() {
       },
       body: JSON.stringify(preferences)
     });
+
+    if (selectedLocation) {
+      try {
+        await hydrateRecommendations(selectedLocation, preferences);
+      } catch (error) {
+        console.error("Could not refresh recommendations after saving preferences:", error);
+      }
+    }
 
     setScreen("home");
   }
@@ -254,41 +297,8 @@ export default function App() {
 
     const prefs = overridePreferences || preferences;
 
-    const params = new URLSearchParams({
-      location: locationSlug,
-      userId: String(user.id),
-      limit: "500",
-      ...buildPreferenceParams(prefs)
-    });
-    const url = `${API_BASE}/recommendations?${params.toString()}`;
-
     try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(`Recommendation request failed: ${res.status}`);
-      }
-      const data = await res.json();
-
-      setRecommendations(data.recommendations || []);
-
-      if (locationSlug === "rathbone") {
-        const allParams = new URLSearchParams({
-          location: locationSlug,
-          userId: String(user.id),
-          view: "all",
-          limit: "500",
-          ...buildPreferenceParams(prefs)
-        });
-        const allRes = await fetch(`${API_BASE}/recommendations?${allParams.toString()}`);
-        if (!allRes.ok) {
-          throw new Error(`All meals request failed: ${allRes.status}`);
-        }
-        const allData = await allRes.json();
-        setAllMeals(allData.recommendations || []);
-      } else {
-        setAllMeals(sortMealsAlphabetically(data.recommendations || []));
-      }
-
+      await hydrateRecommendations(locationSlug, prefs);
       setScreen("recommendations");
     } catch (error) {
       alert("Could not load recommendations.");
@@ -382,47 +392,63 @@ export default function App() {
           <div className="header-spacer" />
         </header>
 
-        <section className="auth-card">
-          {authMode === "signup" && (
+        <section className="auth-layout">
+          <aside className="auth-intro">
+            <p className="eyebrow">Lehigh dining, made clearer</p>
+            <h2>Choose meals that fit your goals without guessing.</h2>
+            <p>
+              Compare sustainability and nutrition scores, save favorites, and get
+              recommendations shaped around the changes you actually want to make.
+            </p>
+            <div className="auth-feature-list">
+              <span>Daily dining hall picks</span>
+              <span>Evidence-based impact scores</span>
+              <span>Dorm meal ideas that are realistic</span>
+            </div>
+          </aside>
+
+          <section className="auth-card">
+            {authMode === "signup" && (
+              <input
+                placeholder="Name"
+                value={authForm.name}
+                onChange={e => setAuthForm({ ...authForm, name: e.target.value })}
+              />
+            )}
+
             <input
-              placeholder="Name"
-              value={authForm.name}
-              onChange={e => setAuthForm({ ...authForm, name: e.target.value })}
+              placeholder="Email"
+              value={authForm.email}
+              onChange={e => setAuthForm({ ...authForm, email: e.target.value })}
             />
-          )}
 
-          <input
-            placeholder="Email"
-            value={authForm.email}
-            onChange={e => setAuthForm({ ...authForm, email: e.target.value })}
-          />
+            <input
+              placeholder="Password"
+              type="password"
+              value={authForm.password}
+              onChange={e => setAuthForm({ ...authForm, password: e.target.value })}
+            />
 
-          <input
-            placeholder="Password"
-            type="password"
-            value={authForm.password}
-            onChange={e => setAuthForm({ ...authForm, password: e.target.value })}
-          />
+            <button className="primary-btn" onClick={handleEmailAuth}>
+              {authMode === "login" ? "Sign In" : "Create Account"}
+            </button>
 
-          <button className="primary-btn" onClick={handleEmailAuth}>
-            {authMode === "login" ? "Sign In" : "Create Account"}
-          </button>
+            <div className="divider">or</div>
 
-          <div className="divider">or</div>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => alert("Google sign-in failed.")}
+            />
 
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => alert("Google sign-in failed.")}
-          />
-
-          <button
-            className="text-btn"
-            onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}
-          >
-            {authMode === "login"
-              ? "Need an account? Create one"
-              : "Already have an account? Sign in"}
-          </button>
+            <button
+              className="text-btn"
+              onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}
+            >
+              {authMode === "login"
+                ? "Need an account? Create one"
+                : "Already have an account? Sign in"}
+            </button>
+          </section>
         </section>
       </main>
     );
