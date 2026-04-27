@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const dormMealsFallback = require("../data/dormMeals");
 
 function mapProteinCategoryToOwid(proteinCategory) {
   switch ((proteinCategory || "").toLowerCase()) {
@@ -87,7 +88,7 @@ function parseDormMealsCsv(csvText) {
       row[header] = values[index];
     });
 
-    return {
+    return normalizeDormMeal({
       id: row.meal_id || "",
       name: row.meal_name || row.name || "",
       description: row.description || "",
@@ -105,12 +106,23 @@ function parseDormMealsCsv(csvText) {
       proteinCategory: row.protein_category || "",
       dairyHeavy: row.dairy_heavy || "no",
       plantForwardLevel: row.plant_forward_level || "medium",
-      owidComponents:
-        row.owidComponents || row.owid_components
-          ? JSON.parse(row.owidComponents || row.owid_components || "[]")
-          : buildDormMealComponents(row)
-    };
+      owidComponents: row.owidComponents || row.owid_components
+        ? JSON.parse(row.owidComponents || row.owid_components || "[]")
+        : null
+    });
   });
+}
+
+function normalizeDormMeal(meal) {
+  return {
+    ...meal,
+    dietTags: Array.isArray(meal.dietTags) ? meal.dietTags : [],
+    owidComponents: meal.owidComponents || buildDormMealComponents({
+      protein_category: meal.proteinCategory,
+      dairy_heavy: meal.dairyHeavy,
+      plant_forward_level: meal.plantForwardLevel
+    })
+  };
 }
 
 function loadDormMeals() {
@@ -122,7 +134,7 @@ function loadDormMeals() {
   );
 
   if (!fs.existsSync(filePath)) {
-    throw new Error(`Dorm meals CSV not found: ${filePath}`);
+    return dormMealsFallback.map(normalizeDormMeal);
   }
 
   const csvText = fs.readFileSync(filePath, "utf8");

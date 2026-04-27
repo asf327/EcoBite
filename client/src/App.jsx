@@ -40,6 +40,12 @@ const SURVEY_OPTIONS = [
   ["avoidsPork", "Avoid pork"]
 ];
 
+function buildPreferenceParams(preferences) {
+  return Object.fromEntries(
+    Object.entries(preferences).map(([key, value]) => [key, String(Boolean(value))])
+  );
+}
+
 function scoreColor(score) {
   if (score >= 80) return "score-green";
   if (score >= 60) return "score-yellow";
@@ -251,14 +257,16 @@ export default function App() {
     const params = new URLSearchParams({
       location: locationSlug,
       userId: String(user.id),
-      limit: "500"
+      limit: "500",
+      ...buildPreferenceParams(prefs)
     });
-
-
     const url = `${API_BASE}/recommendations?${params.toString()}`;
 
     try {
       const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error(`Recommendation request failed: ${res.status}`);
+      }
       const data = await res.json();
 
       setRecommendations(data.recommendations || []);
@@ -268,9 +276,13 @@ export default function App() {
           location: locationSlug,
           userId: String(user.id),
           view: "all",
-          limit: "500"
+          limit: "500",
+          ...buildPreferenceParams(prefs)
         });
         const allRes = await fetch(`${API_BASE}/recommendations?${allParams.toString()}`);
+        if (!allRes.ok) {
+          throw new Error(`All meals request failed: ${allRes.status}`);
+        }
         const allData = await allRes.json();
         setAllMeals(allData.recommendations || []);
       } else {

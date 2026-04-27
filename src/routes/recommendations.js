@@ -22,6 +22,14 @@ function convertDbPreferencesToUserPreferences(dbPreferences) {
   };
 }
 
+function parseBooleanPreference(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return value === true || value === "true" || value === 1 || value === "1";
+}
+
 router.get("/", async (req, res) => {
   try {
     const {
@@ -48,6 +56,16 @@ router.get("/", async (req, res) => {
 
     let userPreferences = {};
 
+    const queryPreferences = {
+      wantsHighProtein: parseBooleanPreference(wantsHighProtein),
+      prefersLowImpact: parseBooleanPreference(prefersLowImpact),
+      prefersPlantBased: parseBooleanPreference(prefersPlantBased),
+      vegetarian: parseBooleanPreference(vegetarian),
+      vegan: parseBooleanPreference(vegan),
+      avoidsBeef: parseBooleanPreference(avoidsBeef),
+      avoidsPork: parseBooleanPreference(avoidsPork)
+    };
+
     if (userId) {
       const dbPreferencesResult = await query(
         `
@@ -59,17 +77,16 @@ router.get("/", async (req, res) => {
       );
       const dbPreferences = dbPreferencesResult.rows[0];
 
-      userPreferences = convertDbPreferencesToUserPreferences(dbPreferences);
-    } else {
       userPreferences = {
-        wantsHighProtein: wantsHighProtein === "true",
-        prefersLowImpact: prefersLowImpact === "true",
-        prefersPlantBased: prefersPlantBased === "true",
-        vegetarian: vegetarian === "true",
-        vegan: vegan === "true",
-        avoidsBeef: avoidsBeef === "true",
-        avoidsPork: avoidsPork === "true"
+        ...convertDbPreferencesToUserPreferences(dbPreferences),
+        ...Object.fromEntries(
+          Object.entries(queryPreferences).filter(([, value]) => value !== undefined)
+        )
       };
+    } else {
+      userPreferences = Object.fromEntries(
+        Object.entries(queryPreferences).filter(([, value]) => value !== undefined)
+      );
     }
 
     const recommendations = await getRecommendations({
