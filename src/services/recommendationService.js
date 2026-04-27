@@ -1,10 +1,9 @@
-const { loadRathboneItems } = require("./rathboneLoader");
 const {
   getTodayDateString,
   getCurrentMealPeriod
 } = require("./mealTimeService");
 const {
-  ensureRathboneMenuForDate
+  getRathboneItemsForDate
 } = require("./rathboneFetchService");
 const { loadDormMeals } = require("./dormMealLoader");
 
@@ -62,10 +61,7 @@ async function getRecommendations({
   if (location === "rathbone") {
     const resolvedDate = menuDate || getTodayDateString();
     const resolvedMealPeriod = mealPeriod || getCurrentMealPeriod();
-
-    await ensureRathboneMenuForDate(resolvedDate);
-
-    let rathboneItems = loadRathboneItems(resolvedDate);
+    let rathboneItems = await getRathboneItemsForDate(resolvedDate);
 
     rathboneItems = rathboneItems.filter(item => {
       const itemMealPeriod = String(item.mealPeriod || "").toLowerCase();

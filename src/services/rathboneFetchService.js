@@ -2,6 +2,10 @@ const fs = require("fs");
 const path = require("path");
 const { spawn } = require("child_process");
 const { getTodayDateString } = require("./mealTimeService");
+const { loadRathboneItems, flattenRathboneJson } = require("./rathboneLoader");
+
+const RATHBONE_API_URL = "https://api-prd.sodexomyway.net/v0.2/data/menu/97451005/151204?date=";
+const RATHBONE_API_KEY = "68717828-b754-420d-9488-4c37cb7d7ef7";
 
 function getRathboneRawPath(dateString) {
   return path.join(
@@ -71,9 +75,35 @@ async function ensureRathboneMenuForDate(dateString = getTodayDateString()) {
   };
 }
 
+async function fetchRathboneItemsLive(dateString = getTodayDateString()) {
+  const response = await fetch(`${RATHBONE_API_URL}${dateString}`, {
+    headers: {
+      "API-Key": RATHBONE_API_KEY,
+      "Content-Type": "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Rathbone live fetch failed: ${response.status}`);
+  }
+
+  const payload = await response.json();
+  return flattenRathboneJson(payload);
+}
+
+async function getRathboneItemsForDate(dateString = getTodayDateString()) {
+  if (rathboneFileExists(dateString)) {
+    return loadRathboneItems(dateString);
+  }
+
+  return fetchRathboneItemsLive(dateString);
+}
+
 module.exports = {
   getRathboneRawPath,
   rathboneFileExists,
   fetchRathboneMenu,
-  ensureRathboneMenuForDate
+  ensureRathboneMenuForDate,
+  fetchRathboneItemsLive,
+  getRathboneItemsForDate
 };
