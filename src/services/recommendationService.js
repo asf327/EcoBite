@@ -9,7 +9,8 @@ const {
 const { loadDormMeals } = require("./dormMealLoader");
 
 const {
-  buildRathboneMealCandidatesFromObjects
+  buildRathboneMealCandidatesFromObjects,
+  buildRathboneAllItemsFromObjects
 } = require("../builders/rathboneBuilder");
 
 const {
@@ -53,6 +54,7 @@ async function getRecommendations({
   location,
   menuDate,
   mealPeriod,
+  view = "recommended",
   userPreferences = {},
   limit = 10
 }) {
@@ -72,12 +74,16 @@ async function getRecommendations({
       return itemMealPeriod.includes(targetMealPeriod);
     });
 
-    meals = buildRathboneMealCandidatesFromObjects(
-      rathboneItems,
-      userPreferences
-    );
+    if (view === "all") {
+      meals = buildRathboneAllItemsFromObjects(rathboneItems, userPreferences);
+    } else {
+      meals = buildRathboneMealCandidatesFromObjects(
+        rathboneItems,
+        userPreferences
+      );
 
-    meals = attachExplanations(meals, userPreferences);
+      meals = attachExplanations(meals, userPreferences);
+    }
 
     return meals.slice(0, limit).map(meal => ({
       ...meal,

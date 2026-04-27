@@ -8,16 +8,34 @@ const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function createOrGetUser({ googleId = null, email, name, passwordHash = null }) {
+  const existing = db.prepare(`
+    SELECT id, google_id, email, name, created_at
+    FROM users
+    WHERE email = ?
+  `).get(email);
+
+  if (existing) {
+    return {
+      user: existing,
+      isNewUser: false
+    };
+  }
+
   db.prepare(`
     INSERT OR IGNORE INTO users (google_id, email, name, password_hash)
     VALUES (?, ?, ?, ?)
   `).run(googleId, email, name, passwordHash);
 
-  return db.prepare(`
+  const user = db.prepare(`
     SELECT id, google_id, email, name, created_at
     FROM users
     WHERE email = ?
   `).get(email);
+
+  return {
+    user,
+    isNewUser: true
+  };
 }
 
 router.post("/signup", async (req, res) => {
@@ -36,13 +54,13 @@ router.post("/signup", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const user = createOrGetUser({
+    const { user, isNewUser } = createOrGetUser({
       email,
       name: name || email,
       passwordHash
     });
 
-    res.json({ user });
+    res.json({ user, isNewUser });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -69,7 +87,8 @@ router.post("/login", async (req, res) => {
         id: user.id,
         email: user.email,
         name: user.name
-      }
+      },
+      isNewUser: false
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -91,13 +110,13 @@ router.post("/google", async (req, res) => {
 
     const payload = ticket.getPayload();
 
-    const user = createOrGetUser({
+    const { user, isNewUser } = createOrGetUser({
       googleId: payload.sub,
       email: payload.email,
       name: payload.name || payload.email
     });
 
-    res.json({ user });
+    res.json({ user, isNewUser });
   } catch (error) {
     res.status(401).json({ error: "Google sign-in failed." });
   }

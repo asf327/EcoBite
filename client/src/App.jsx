@@ -4,7 +4,6 @@ import {
   Home,
   Heart,
   User,
-  BarChart3,
   Leaf,
   Coffee,
   Moon,
@@ -89,12 +88,24 @@ export default function App() {
 
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
+  const [allMeals, setAllMeals] = useState([]);
   const [selectedMeal, setSelectedMeal] = useState(null);
   const [savedMeals, setSavedMeals] = useState([]);
   const [savedMealNames, setSavedMealNames] = useState(new Set());
   const [activeTab, setActiveTab] = useState("recommended");
   const [profileTab, setProfileTab] = useState("main");
   const [loading, setLoading] = useState(false);
+
+  function sortMealsAlphabetically(meals) {
+    return [...meals].sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  }
 
   useEffect(() => {
     if (user) {
@@ -134,33 +145,46 @@ export default function App() {
       body: JSON.stringify(nextPreferences)
     });
 
-    // If the user is already looking at a location, reload recommendations
-    // so the ranking updates immediately.
-    if (selectedLocation) {
-      await loadRecommendations(selectedLocation, nextPreferences);
-    }
   }
 
   async function loadUserPreferences(userId) {
-  try {
-    const res = await fetch(`${API_BASE}/users/${userId}`);
-    const data = await res.json();
+    try {
+      const res = await fetch(`${API_BASE}/users/${userId}`);
+      const data = await res.json();
 
-    if (data.preferences) {
-      setPreferences({
-        wantsHighProtein: data.preferences.wants_high_protein === 1,
-        prefersLowImpact: data.preferences.prefers_low_impact === 1,
-        prefersPlantBased: data.preferences.prefers_plant_based === 1,
-        vegetarian: data.preferences.vegetarian === 1,
-        vegan: data.preferences.vegan === 1,
-        avoidsBeef: data.preferences.avoids_beef === 1,
-        avoidsPork: data.preferences.avoids_pork === 1
-      });
+      if (data.preferences) {
+        setPreferences({
+          wantsHighProtein: data.preferences.wants_high_protein === 1,
+          prefersLowImpact: data.preferences.prefers_low_impact === 1,
+          prefersPlantBased: data.preferences.prefers_plant_based === 1,
+          vegetarian: data.preferences.vegetarian === 1,
+          vegan: data.preferences.vegan === 1,
+          avoidsBeef: data.preferences.avoids_beef === 1,
+          avoidsPork: data.preferences.avoids_pork === 1
+        });
+      }
+    } catch (error) {
+      console.error("Could not load preferences:", error);
     }
-  } catch (error) {
-    console.error("Could not load preferences:", error);
   }
-}
+
+  async function finishAuth(data) {
+    if (!data.user) {
+      alert(data.error || "Sign in failed.");
+      return;
+    }
+
+    localStorage.setItem("ecobiteUser", JSON.stringify(data.user));
+    setUser(data.user);
+    setProfileTab("main");
+
+    if (data.isNewUser) {
+      setScreen("survey");
+      return;
+    }
+
+    setScreen("home");
+  }
 
   async function handleEmailAuth() {
     const endpoint = authMode === "login" ? "login" : "signup";
@@ -174,14 +198,7 @@ export default function App() {
     });
 
     const data = await res.json();
-
-    if (data.user) {
-      localStorage.setItem("ecobiteUser", JSON.stringify(data.user));
-      setUser(data.user);
-      setScreen("survey");
-    } else {
-      alert(data.error || "Sign in failed.");
-    }
+    await finishAuth(data);
   }
 
   async function handleGoogleSuccess(credentialResponse) {
@@ -196,14 +213,7 @@ export default function App() {
     });
 
     const data = await res.json();
-
-    if (data.user) {
-      localStorage.setItem("ecobiteUser", JSON.stringify(data.user));
-      setUser(data.user);
-      setScreen("survey");
-    } else {
-      alert(data.error || "Google sign-in failed.");
-    }
+    await finishAuth(data);
   }
 
   async function savePreferences() {
@@ -232,12 +242,14 @@ export default function App() {
     setLoading(true);
     setSelectedLocation(locationSlug);
     setActiveTab("recommended");
+    setAllMeals([]);
 
     const prefs = overridePreferences || preferences;
 
     const params = new URLSearchParams({
       location: locationSlug,
-      userId: String(user.id)
+      userId: String(user.id),
+      limit: "500"
     });
 
 
@@ -248,6 +260,21 @@ export default function App() {
       const data = await res.json();
 
       setRecommendations(data.recommendations || []);
+
+      if (locationSlug === "rathbone") {
+        const allParams = new URLSearchParams({
+          location: locationSlug,
+          userId: String(user.id),
+          view: "all",
+          limit: "500"
+        });
+        const allRes = await fetch(`${API_BASE}/recommendations?${allParams.toString()}`);
+        const allData = await allRes.json();
+        setAllMeals(allData.recommendations || []);
+      } else {
+        setAllMeals(sortMealsAlphabetically(data.recommendations || []));
+      }
+
       setScreen("recommendations");
     } catch (error) {
       alert("Could not load recommendations.");
@@ -295,13 +322,10 @@ export default function App() {
     setScreen("landing");
   }
 
-  const visibleRecommendations = recommendations.filter(meal => {
-    if (activeTab === "low-impact") {
-      return meal.sustainabilityScore >= 85;
-    }
-
-    return true;
-  });
+  const visibleRecommendations =
+    activeTab === "all"
+      ? allMeals
+      : recommendations;
 
   if (screen === "landing") {
     return (
@@ -401,7 +425,6 @@ export default function App() {
           <div className="header-spacer" />
         </header>
 
-        <p className="step-text">Step 1 of 1</p>
         <h2>What are your goals?</h2>
         <p className="small-muted">Choose all that apply.</p>
 
@@ -425,7 +448,7 @@ export default function App() {
           ))}
         </section>
 
-       <button className="primary-btn bottom-btn" onClick={() => setScreen("home")}>
+       <button className="primary-btn bottom-btn" onClick={savePreferences}>
         Done
       </button>
       </main>
@@ -437,7 +460,7 @@ export default function App() {
       <main className="app-shell">
         <header className="top-header">
           <div>
-            <p className="small-muted">Good morning</p>
+            <p className="small-muted">{getGreeting()}</p>
             <h2>Where would you like to eat?</h2>
           </div>
           <button className="icon-btn" onClick={() => setScreen("survey")}>
@@ -497,13 +520,6 @@ export default function App() {
             onClick={() => setActiveTab("all")}
           >
             All Meals
-          </button>
-
-          <button
-            className={`tab ${activeTab === "low-impact" ? "active" : ""}`}
-            onClick={() => setActiveTab("low-impact")}
-          >
-            Low Impact
           </button>
         </div>
 
@@ -659,9 +675,6 @@ export default function App() {
             <button onClick={() => setProfileTab("about")}>
               About EcoBite
             </button>
-            <button>
-              Help & Support
-            </button>
             <button className="logout-btn" onClick={logout}>
               <LogOut size={18} />
               Log Out
@@ -736,11 +749,6 @@ function BottomNav({ screen, setScreen }) {
       >
         <Heart size={20} />
         Saved
-      </button>
-
-      <button>
-        <BarChart3 size={20} />
-        Compare
       </button>
 
       <button

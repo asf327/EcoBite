@@ -28,6 +28,7 @@ router.get("/", async (req, res) => {
       location,
       date,
       mealPeriod,
+      view,
       limit,
       userId,
       wantsHighProtein,
@@ -71,6 +72,7 @@ router.get("/", async (req, res) => {
       location,
       menuDate: date,
       mealPeriod,
+      view: view || "recommended",
       userPreferences,
       limit: Number(limit || 10)
     });

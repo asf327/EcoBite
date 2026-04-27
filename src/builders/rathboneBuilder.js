@@ -2,6 +2,7 @@ const { scoreNutrition, combineNutritionFromItems } = require("../utils/nutritio
 const { scoreMealEnvironment } = require("../utils/sustainabilityScoring");
 const { scorePreferenceFit, scoreRecommendation } = require("../utils/preferenceScoring");
 const { classifyItemName } = require("../classifiers/itemClassifier");
+const { attachExplanations } = require("../utils/explanationLogic");
 
 function buildRathboneMealCandidatesFromObjects(itemObjects, userPreferences = {}) {
   const buckets = {
@@ -85,6 +86,61 @@ function buildRathboneMealCandidatesFromObjects(itemObjects, userPreferences = {
   return uniqueMeals.sort((a, b) => b.recommendationScore - a.recommendationScore);
 }
 
+function scoreSingleRathboneItem(item, userPreferences = {}) {
+  const classified = classifyItemName(item.formalName);
+  const nutritionTotals = {
+    calories: item.calories,
+    satFat: item.saturatedFat,
+    sodium: item.sodium,
+    addedSugar: item.addedSugar,
+    fiber: item.dietaryFiber,
+    protein: item.protein
+  };
+
+  const components = [
+    { category: classified.primaryCategory, weightFraction: 1 }
+  ];
+
+  const env = scoreMealEnvironment(components);
+  const nut = scoreNutrition(nutritionTotals);
+
+  const meal = {
+    source: "rathbone",
+    template: "single_item",
+    name: item.formalName,
+    description: item.description,
+    station: item.station,
+    mealPeriod: item.mealPeriod,
+    itemNames: [item.formalName],
+    components,
+    nutritionTotals,
+    ...env,
+    ...nut
+  };
+
+  const pref = scorePreferenceFit(meal, userPreferences);
+  const rec = scoreRecommendation({
+    sustainabilityScore: meal.sustainabilityScore,
+    nutritionScore: meal.nutritionScore,
+    preferenceFitScore: pref.preferenceFitScore
+  });
+
+  return {
+    ...meal,
+    ...pref,
+    ...rec
+  };
+}
+
+function buildRathboneAllItemsFromObjects(itemObjects, userPreferences = {}) {
+  return attachExplanations(
+    itemObjects
+      .map(item => scoreSingleRathboneItem(item, userPreferences))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+    userPreferences
+  );
+}
+
 function isMealAppropriateGrain(item, mealPeriod = "") {
   const name = item.itemName.toLowerCase();
   const period = mealPeriod.toLowerCase();
@@ -109,4 +165,7 @@ function isStandaloneEntree(itemName = "") {
   );
 }
 
-module.exports = { buildRathboneMealCandidatesFromObjects };
+module.exports = {
+  buildRathboneMealCandidatesFromObjects,
+  buildRathboneAllItemsFromObjects
+};

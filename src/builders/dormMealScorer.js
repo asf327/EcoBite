@@ -9,7 +9,14 @@ function scoreDormMeal(meal, userPreferences = {}) {
 
   const base = {
     source: "dorm",
+    id: meal.id,
     name: meal.name,
+    description: meal.description,
+    ingredients: meal.ingredients,
+    equipmentNeeded: meal.equipmentNeeded,
+    estimatedCostUsd: meal.estimatedCostUsd,
+    timeMinutes: meal.timeMinutes,
+    dietTags: meal.dietTags || [],
     components: meal.owidComponents,
     nutritionTotals: {
       calories: meal.calories,
