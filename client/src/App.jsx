@@ -17,7 +17,9 @@ import {
 } from "lucide-react";
 import "./styles.css";
 
-const API_BASE = "http://localhost:3001";
+const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  (globalThis.location?.hostname === "localhost" ? "http://localhost:3001" : "/api");
 
 const LOCATIONS = [
   { slug: "rathbone", name: "Rathbone Dining Hall", icon: Utensils },

@@ -25,3 +25,23 @@ Build a first version that:
 - asks a short onboarding survey
 - recommends the best options for a student based on their habits
 - suggests one realistic lower-impact change
+
+## Vercel
+
+This repo can be deployed as a single Vercel project:
+
+- the frontend is built from `client/`
+- the backend is served from `api/index.js`
+- frontend API requests go to `/api`
+
+Required Vercel environment variables:
+
+- `DATABASE_URL`
+- `GOOGLE_CLIENT_ID`
+- `VITE_GOOGLE_CLIENT_ID`
+
+Optional:
+
+- `VITE_API_BASE`
+
+For a single-project deploy, you usually do not need `VITE_API_BASE` because the frontend defaults to `/api` in production.
