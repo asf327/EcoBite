@@ -1,6 +1,6 @@
 const express = require("express");
 const { getRecommendations } = require("../services/recommendationService");
-const { db } = require("../db/db");
+const { query } = require("../db/db");
 
 const router = express.Router();
 
@@ -10,13 +10,13 @@ function convertDbPreferencesToUserPreferences(dbPreferences) {
   }
 
   return {
-    wantsHighProtein: dbPreferences.wants_high_protein === 1,
-    prefersLowImpact: dbPreferences.prefers_low_impact === 1,
-    prefersPlantBased: dbPreferences.prefers_plant_based === 1,
-    vegetarian: dbPreferences.vegetarian === 1,
-    vegan: dbPreferences.vegan === 1,
-    avoidsBeef: dbPreferences.avoids_beef === 1,
-    avoidsPork: dbPreferences.avoids_pork === 1,
+    wantsHighProtein: dbPreferences.wants_high_protein === true,
+    prefersLowImpact: dbPreferences.prefers_low_impact === true,
+    prefersPlantBased: dbPreferences.prefers_plant_based === true,
+    vegetarian: dbPreferences.vegetarian === true,
+    vegan: dbPreferences.vegan === true,
+    avoidsBeef: dbPreferences.avoids_beef === true,
+    avoidsPork: dbPreferences.avoids_pork === true,
     preferredLocation: dbPreferences.preferred_location || null,
     changeLevel: dbPreferences.change_level || "small"
   };
@@ -49,11 +49,15 @@ router.get("/", async (req, res) => {
     let userPreferences = {};
 
     if (userId) {
-      const dbPreferences = db.prepare(`
-        SELECT *
-        FROM user_preferences
-        WHERE user_id = ?
-      `).get(userId);
+      const dbPreferencesResult = await query(
+        `
+          SELECT *
+          FROM user_preferences
+          WHERE user_id = $1
+        `,
+        [userId]
+      );
+      const dbPreferences = dbPreferencesResult.rows[0];
 
       userPreferences = convertDbPreferencesToUserPreferences(dbPreferences);
     } else {

@@ -154,13 +154,13 @@ export default function App() {
 
       if (data.preferences) {
         setPreferences({
-          wantsHighProtein: data.preferences.wants_high_protein === 1,
-          prefersLowImpact: data.preferences.prefers_low_impact === 1,
-          prefersPlantBased: data.preferences.prefers_plant_based === 1,
-          vegetarian: data.preferences.vegetarian === 1,
-          vegan: data.preferences.vegan === 1,
-          avoidsBeef: data.preferences.avoids_beef === 1,
-          avoidsPork: data.preferences.avoids_pork === 1
+          wantsHighProtein: data.preferences.wants_high_protein === true || data.preferences.wants_high_protein === 1,
+          prefersLowImpact: data.preferences.prefers_low_impact === true || data.preferences.prefers_low_impact === 1,
+          prefersPlantBased: data.preferences.prefers_plant_based === true || data.preferences.prefers_plant_based === 1,
+          vegetarian: data.preferences.vegetarian === true || data.preferences.vegetarian === 1,
+          vegan: data.preferences.vegan === true || data.preferences.vegan === 1,
+          avoidsBeef: data.preferences.avoids_beef === true || data.preferences.avoids_beef === 1,
+          avoidsPork: data.preferences.avoids_pork === true || data.preferences.avoids_pork === 1
         });
       }
     } catch (error) {

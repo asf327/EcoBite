@@ -1,31 +1,89 @@
-const Database = require("better-sqlite3");
-const fs = require("fs");
-const path = require("path");
+const { Pool } = require("pg");
 
-const dataDir = path.join(process.cwd(), "data");
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-}
-
-const dbPath = path.join(dataDir, "ecobite.sqlite");
-const schemaPath = path.join(__dirname, "schema.sql");
-
-const db = new Database(dbPath);
-
-function initializeDatabase() {
-  const schema = fs.readFileSync(schemaPath, "utf8");
-  db.exec(schema);
-
-  try {
-    db.exec(`ALTER TABLE users ADD COLUMN password_hash TEXT`);
-  } catch (error) {
-    // Column already exists
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
   }
+});
 
-  seedLocations();
+async function query(text, params) {
+  const res = await pool.query(text, params);
+  return res;
 }
 
-function seedLocations() {
+async function initializeDatabase() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      google_id TEXT,
+      email TEXT UNIQUE,
+      name TEXT,
+      password_hash TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      user_id INTEGER PRIMARY KEY,
+      wants_high_protein BOOLEAN,
+      prefers_low_impact BOOLEAN,
+      prefers_plant_based BOOLEAN,
+      vegetarian BOOLEAN,
+      vegan BOOLEAN,
+      avoids_beef BOOLEAN,
+      avoids_pork BOOLEAN,
+      preferred_location TEXT,
+      change_level TEXT DEFAULT 'small'
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS saved_meals (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER,
+      meal_name TEXT,
+      location_slug TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS locations (
+      id SERIAL PRIMARY KEY,
+      slug TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      description TEXT
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS meals (
+      id SERIAL PRIMARY KEY,
+      location_slug TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      meal_type TEXT,
+      source TEXT,
+      calories REAL,
+      sat_fat REAL,
+      sodium REAL,
+      added_sugar REAL,
+      fiber REAL,
+      protein REAL,
+      sustainability_score REAL,
+      nutrition_score REAL,
+      recommendation_score REAL,
+      created_at TIMESTAMP DEFAULT NOW()
+    );
+  `);
+
+  await seedLocations();
+}
+
+async function seedLocations() {
   const locations = [
     ["rathbone", "Rathbone Dining Hall", "dining_hall", "Daily dining hall menu"],
     ["grind", "The Grind", "retail", "Cafe sandwiches, smoothies, and breakfast items"],
@@ -37,17 +95,19 @@ function seedLocations() {
     ["dorm", "Dorm Meals", "manual", "Simple dorm kitchen meal ideas"]
   ];
 
-  const stmt = db.prepare(`
-    INSERT OR IGNORE INTO locations (slug, name, type, description)
-    VALUES (?, ?, ?, ?)
-  `);
-
-  for (const location of locations) {
-    stmt.run(...location);
+  for (const [slug, name, type, description] of locations) {
+    await query(
+      `
+        INSERT INTO locations (slug, name, type, description)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (slug) DO NOTHING
+      `,
+      [slug, name, type, description]
+    );
   }
 }
 
 module.exports = {
-  db,
+  query,
   initializeDatabase
 };

@@ -1,18 +1,22 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const { OAuth2Client } = require("google-auth-library");
-const { db } = require("../db/db");
+const { query } = require("../db/db");
 
 const router = express.Router();
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-function createOrGetUser({ googleId = null, email, name, passwordHash = null }) {
-  const existing = db.prepare(`
-    SELECT id, google_id, email, name, created_at
-    FROM users
-    WHERE email = ?
-  `).get(email);
+async function createOrGetUser({ googleId = null, email, name, passwordHash = null }) {
+  const existingResult = await query(
+    `
+      SELECT id, google_id, email, name, created_at
+      FROM users
+      WHERE email = $1
+    `,
+    [email]
+  );
+  const existing = existingResult.rows[0];
 
   if (existing) {
     return {
@@ -21,16 +25,24 @@ function createOrGetUser({ googleId = null, email, name, passwordHash = null }) 
     };
   }
 
-  db.prepare(`
-    INSERT OR IGNORE INTO users (google_id, email, name, password_hash)
-    VALUES (?, ?, ?, ?)
-  `).run(googleId, email, name, passwordHash);
+  await query(
+    `
+      INSERT INTO users (google_id, email, name, password_hash)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (email) DO NOTHING
+    `,
+    [googleId, email, name, passwordHash]
+  );
 
-  const user = db.prepare(`
-    SELECT id, google_id, email, name, created_at
-    FROM users
-    WHERE email = ?
-  `).get(email);
+  const userResult = await query(
+    `
+      SELECT id, google_id, email, name, created_at
+      FROM users
+      WHERE email = $1
+    `,
+    [email]
+  );
+  const user = userResult.rows[0];
 
   return {
     user,
@@ -46,7 +58,8 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ error: "Email and password are required." });
     }
 
-    const existing = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+    const existingResult = await query("SELECT * FROM users WHERE email = $1", [email]);
+    const existing = existingResult.rows[0];
 
     if (existing) {
       return res.status(409).json({ error: "User already exists." });
@@ -54,7 +67,7 @@ router.post("/signup", async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    const { user, isNewUser } = createOrGetUser({
+    const { user, isNewUser } = await createOrGetUser({
       email,
       name: name || email,
       passwordHash
@@ -70,7 +83,8 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
+    const userResult = await query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = userResult.rows[0];
 
     if (!user || !user.password_hash) {
       return res.status(401).json({ error: "Invalid login." });
@@ -110,7 +124,7 @@ router.post("/google", async (req, res) => {
 
     const payload = ticket.getPayload();
 
-    const { user, isNewUser } = createOrGetUser({
+    const { user, isNewUser } = await createOrGetUser({
       googleId: payload.sub,
       email: payload.email,
       name: payload.name || payload.email

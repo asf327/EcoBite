@@ -1,60 +1,82 @@
 const express = require("express");
-const { db } = require("../db/db");
+const { query } = require("../db/db");
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  const { location } = req.query;
+router.get("/", async (req, res) => {
+  try {
+    const { location } = req.query;
 
-  let meals;
+    let result;
 
-  if (location) {
-    meals = db.prepare(`
-      SELECT * FROM meals
-      WHERE location_slug = ?
-      ORDER BY recommendation_score DESC
-    `).all(location);
-  } else {
-    meals = db.prepare(`
-      SELECT * FROM meals
-      ORDER BY created_at DESC
-      LIMIT 100
-    `).all();
+    if (location) {
+      result = await query(
+        `
+          SELECT * FROM meals
+          WHERE location_slug = $1
+          ORDER BY recommendation_score DESC
+        `,
+        [location]
+      );
+    } else {
+      result = await query(`
+        SELECT * FROM meals
+        ORDER BY created_at DESC
+        LIMIT 100
+      `);
+    }
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  res.json(meals);
 });
 
-router.post("/save", (req, res) => {
-  const { userId, mealName, locationSlug } = req.body;
+router.post("/save", async (req, res) => {
+  try {
+    const { userId, mealName, locationSlug } = req.body;
 
-  if (!userId || !mealName || !locationSlug) {
-    return res.status(400).json({
-      error: "userId, mealName, and locationSlug are required"
+    if (!userId || !mealName || !locationSlug) {
+      return res.status(400).json({
+        error: "userId, mealName, and locationSlug are required"
+      });
+    }
+
+    const result = await query(
+      `
+        INSERT INTO saved_meals (user_id, meal_name, location_slug)
+        VALUES ($1, $2, $3)
+        RETURNING id
+      `,
+      [userId, mealName, locationSlug]
+    );
+
+    res.json({
+      id: result.rows[0].id,
+      userId,
+      mealName,
+      locationSlug
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  const result = db.prepare(`
-    INSERT INTO saved_meals (user_id, meal_name, location_slug)
-    VALUES (?, ?, ?)
-  `).run(userId, mealName, locationSlug);
-
-  res.json({
-    id: result.lastInsertRowid,
-    userId,
-    mealName,
-    locationSlug
-  });
 });
 
-router.get("/saved/:userId", (req, res) => {
-  const saved = db.prepare(`
-    SELECT * FROM saved_meals
-    WHERE user_id = ?
-    ORDER BY saved_at DESC
-  `).all(req.params.userId);
+router.get("/saved/:userId", async (req, res) => {
+  try {
+    const result = await query(
+      `
+        SELECT * FROM saved_meals
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+      `,
+      [req.params.userId]
+    );
 
-  res.json(saved);
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 module.exports = router;

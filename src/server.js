@@ -16,9 +16,6 @@ app.use(express.json());
 app.use(cors());
 app.use("/auth", authRouter);
 
-initializeDatabase();
-startDailyJobs();
-
 app.get("/", (req, res) => {
   res.json({
     message: "EcoBite API is running"
@@ -30,8 +27,16 @@ app.use("/users", usersRouter);
 app.use("/locations", locationsRouter);
 app.use("/meals", mealsRouter);
 
-const PORT = process.env.PORT || 3001;
+initializeDatabase()
+    .then(() => {
+        console.log("Database initialized");
+    })
+    .catch(err => {
+        console.error("Error initializing database:", err);
+    });
+    
+if (process.env.NODE_ENV === "production") {
+  startDailyJobs();
+}
 
-app.listen(PORT, () => {
-  console.log(`EcoBite API running on http://localhost:${PORT}`);
-});
+module.exports = app;
