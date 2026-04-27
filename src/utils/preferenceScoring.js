@@ -16,12 +16,68 @@ function scoreRecommendation({
   };
 }
 
+function getMealFlags(meal) {
+  const categories = (meal.components || []).map(component => component.category);
+
+  const hasBeef = categories.includes("Beef (beef herd)");
+  const hasPork = categories.includes("Pig Meat");
+  const hasPoultry = categories.includes("Poultry Meat");
+  const hasFish = categories.includes("Fish (farmed)") || categories.includes("Prawns (farmed)");
+  const hasEgg = categories.includes("Eggs");
+  const hasDairy = categories.includes("Cheese") || categories.includes("Milk");
+  const hasAnimal = hasBeef || hasPork || hasPoultry || hasFish || hasEgg || hasDairy;
+  const hasMeat = hasBeef || hasPork || hasPoultry || hasFish;
+  const hasPlantProtein = categories.includes("Tofu") || categories.includes("Other Pulses");
+
+  return {
+    categories,
+    hasBeef,
+    hasPork,
+    hasPoultry,
+    hasFish,
+    hasEgg,
+    hasDairy,
+    hasAnimal,
+    hasMeat,
+    hasPlantProtein
+  };
+}
+
+function isMealAllowed(meal, userPreferences = {}) {
+  const {
+    avoidsBeef = false,
+    avoidsPork = false,
+    vegetarian = false,
+    vegan = false
+  } = userPreferences;
+
+  const flags = getMealFlags(meal);
+
+  if (vegan && flags.hasAnimal) return false;
+  if (vegetarian && flags.hasMeat) return false;
+  if (avoidsBeef && flags.hasBeef) return false;
+  if (avoidsPork && flags.hasPork) return false;
+
+  return true;
+}
+
+function compareMealsForUser(a, b, userPreferences = {}) {
+  if (userPreferences.wantsHighProtein) {
+    const proteinDelta = (b.protein || 0) - (a.protein || 0);
+
+    if (Math.abs(proteinDelta) >= 3) {
+      return proteinDelta;
+    }
+  }
+
+  return b.recommendationScore - a.recommendationScore;
+}
+
 function scorePreferenceFit(meal, userPreferences = {}) {
   let score = 50;
 
   const {
     wantsHighProtein = false,
-    prefersPlantBased = false,
     prefersLowImpact = false,
     avoidsBeef = false,
     avoidsPork = false,
@@ -29,42 +85,26 @@ function scorePreferenceFit(meal, userPreferences = {}) {
     vegan = false
   } = userPreferences;
 
-  const categories = (meal.components || []).map(component => component.category);
-
-  const hasBeef = categories.includes("Beef (beef herd)");
-  const hasPork = categories.includes("Pig Meat");
-  const hasPoultry = categories.includes("Poultry Meat");
-  const hasFish =
-    categories.includes("Fish (farmed)") ||
-    categories.includes("Prawns (farmed)");
-  const hasEgg = categories.includes("Eggs");
-  const hasDairy =
-    categories.includes("Cheese") || categories.includes("Milk");
-
-  const hasAnimal =
-    hasBeef || hasPork || hasPoultry || hasFish || hasEgg || hasDairy;
-
-  const hasMeat = hasBeef || hasPork || hasPoultry || hasFish;
-
-  const hasPlantProtein =
-    categories.includes("Tofu") || categories.includes("Other Pulses");
+  const flags = getMealFlags(meal);
 
   const protein = meal.nutritionTotals?.protein || meal.protein || 0;
 
-  if (wantsHighProtein && protein >= 20) score += 20;
-  if (wantsHighProtein && protein < 10) score -= 10;
+  if (wantsHighProtein && protein >= 25) score += 30;
+  else if (wantsHighProtein && protein >= 20) score += 24;
+  else if (wantsHighProtein && protein >= 15) score += 12;
+  else if (wantsHighProtein && protein < 12) score -= 20;
 
-  if (prefersPlantBased && hasPlantProtein) score += 20;
-  if (prefersPlantBased && hasAnimal) score -= 10;
+  if (prefersLowImpact && meal.sustainabilityScore >= 85) score += 25;
+  else if (prefersLowImpact && meal.sustainabilityScore >= 70) score += 12;
+  else if (prefersLowImpact && meal.sustainabilityScore < 50) score -= 20;
 
-  if (prefersLowImpact && meal.sustainabilityScore >= 80) score += 15;
-  if (prefersLowImpact && meal.sustainabilityScore < 50) score -= 10;
+  if (!wantsHighProtein && flags.hasPlantProtein) score += 4;
 
-  if (avoidsBeef && hasBeef) score = 0;
-  if (avoidsPork && hasPork) score -= 20;
+  if (avoidsBeef && flags.hasBeef) score = 0;
+  if (avoidsPork && flags.hasPork) score = 0;
 
-  if (vegetarian && hasMeat) score = 0;
-  if (vegan && hasAnimal) score = 0;
+  if (vegetarian && flags.hasMeat) score = 0;
+  if (vegan && flags.hasAnimal) score = 0;
 
   return {
     preferenceFitScore: Math.round(clamp(score, 0, 100) * 100) / 100
@@ -73,5 +113,8 @@ function scorePreferenceFit(meal, userPreferences = {}) {
 
 module.exports = {
   scoreRecommendation,
-  scorePreferenceFit
+  scorePreferenceFit,
+  isMealAllowed,
+  getMealFlags,
+  compareMealsForUser
 };

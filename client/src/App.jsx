@@ -33,7 +33,6 @@ const LOCATIONS = [
 const SURVEY_OPTIONS = [
   ["wantsHighProtein", "High in protein"],
   ["prefersLowImpact", "Low environmental impact"],
-  ["prefersPlantBased", "Plant-based meals"],
   ["vegetarian", "Vegetarian"],
   ["vegan", "Vegan"],
   ["avoidsBeef", "Avoid beef"],
@@ -87,7 +86,6 @@ export default function App() {
   const [preferences, setPreferences] = useState({
     wantsHighProtein: true,
     prefersLowImpact: true,
-    prefersPlantBased: false,
     vegetarian: false,
     vegan: false,
     avoidsBeef: false,
@@ -153,7 +151,6 @@ export default function App() {
         setPreferences({
           wantsHighProtein: data.preferences.wants_high_protein === true || data.preferences.wants_high_protein === 1,
           prefersLowImpact: data.preferences.prefers_low_impact === true || data.preferences.prefers_low_impact === 1,
-          prefersPlantBased: data.preferences.prefers_plant_based === true || data.preferences.prefers_plant_based === 1,
           vegetarian: data.preferences.vegetarian === true || data.preferences.vegetarian === 1,
           vegan: data.preferences.vegan === true || data.preferences.vegan === 1,
           avoidsBeef: data.preferences.avoids_beef === true || data.preferences.avoids_beef === 1,
@@ -400,6 +397,11 @@ export default function App() {
               Compare sustainability and nutrition scores, save favorites, and get
               recommendations shaped around the changes you actually want to make.
             </p>
+            <div className="auth-visual" aria-hidden="true">
+              <div className="auth-visual-main">🥗</div>
+              <div className="auth-visual-chip auth-visual-chip-top">Eco Score 92</div>
+              <div className="auth-visual-chip auth-visual-chip-bottom">Nutrition 88</div>
+            </div>
             <div className="auth-feature-list">
               <span>Daily dining hall picks</span>
               <span>Evidence-based impact scores</span>
@@ -730,7 +732,6 @@ export default function App() {
             <h3>My Preferences</h3>
             <p>High Protein: {preferences.wantsHighProtein ? "Yes" : "No"}</p>
             <p>Low Impact: {preferences.prefersLowImpact ? "Yes" : "No"}</p>
-            <p>Plant-Based: {preferences.prefersPlantBased ? "Yes" : "No"}</p>
             <p>Vegetarian: {preferences.vegetarian ? "Yes" : "No"}</p>
             <p>Vegan: {preferences.vegan ? "Yes" : "No"}</p>
             <p>Avoid Beef: {preferences.avoidsBeef ? "Yes" : "No"}</p>

@@ -1,6 +1,11 @@
 const { scoreNutrition, combineNutritionFromItems } = require("../utils/nutritionScoring");
 const { scoreMealEnvironment } = require("../utils/sustainabilityScoring");
-const { scorePreferenceFit, scoreRecommendation } = require("../utils/preferenceScoring");
+const {
+  scorePreferenceFit,
+  scoreRecommendation,
+  isMealAllowed,
+  compareMealsForUser
+} = require("../utils/preferenceScoring");
 const { classifyItemName } = require("../classifiers/itemClassifier");
 const { attachExplanations } = require("../utils/explanationLogic");
 
@@ -83,7 +88,9 @@ function buildRathboneMealCandidatesFromObjects(itemObjects, userPreferences = {
     }
   }
 
-  return uniqueMeals.sort((a, b) => b.recommendationScore - a.recommendationScore);
+  return uniqueMeals
+    .filter(meal => isMealAllowed(meal, userPreferences))
+    .sort((a, b) => compareMealsForUser(a, b, userPreferences));
 }
 
 function scoreSingleRathboneItem(item, userPreferences = {}) {
@@ -136,6 +143,7 @@ function buildRathboneAllItemsFromObjects(itemObjects, userPreferences = {}) {
   return attachExplanations(
     itemObjects
       .map(item => scoreSingleRathboneItem(item, userPreferences))
+      .filter(meal => isMealAllowed(meal, userPreferences))
       .sort((a, b) => a.name.localeCompare(b.name)),
     userPreferences
   );

@@ -74,11 +74,10 @@ function buildWhyRecommended(meal, userPreferences = {}) {
     reasons.push("It matches your low-impact preference.");
   }
 
-  if (userPreferences.prefersPlantBased) {
-    const categories = (meal.components || []).map(c => c.category);
-    if (categories.includes("Tofu") || categories.includes("Other Pulses")) {
-      reasons.push("It fits your plant-based preference because it uses tofu, beans, or legumes as a major ingredient.");
-    }
+  if (userPreferences.vegan) {
+    reasons.push("It fits your vegan preference because it avoids animal products.");
+  } else if (userPreferences.vegetarian) {
+    reasons.push("It fits your vegetarian preference because it avoids meat.");
   }
 
   return {

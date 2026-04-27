@@ -1,7 +1,12 @@
 const { extractNutritionFields } = require("../utils/parsers");
 const { scoreNutrition } = require("../utils/nutritionScoring");
 const { scoreMealEnvironment } = require("../utils/sustainabilityScoring");
-const { scorePreferenceFit, scoreRecommendation } = require("../utils/preferenceScoring");
+const {
+  scorePreferenceFit,
+  scoreRecommendation,
+  isMealAllowed,
+  compareMealsForUser
+} = require("../utils/preferenceScoring");
 const { classifyRetailMeal } = require("../classifiers/retailClassifier");
 
 function scoreRetailMeal(retailItem, userPreferences = {}) {
@@ -42,7 +47,8 @@ function scoreRetailMeal(retailItem, userPreferences = {}) {
 function scoreRetailMenu(retailLookupObject, userPreferences = {}) {
   return Object.values(retailLookupObject)
     .map(item => scoreRetailMeal(item, userPreferences))
-    .sort((a, b) => b.recommendationScore - a.recommendationScore);
+    .filter(meal => isMealAllowed(meal, userPreferences))
+    .sort((a, b) => compareMealsForUser(a, b, userPreferences));
 }
 
 function scoreRetailItemFromLookup(retailLookupObject, itemName, userPreferences = {}) {

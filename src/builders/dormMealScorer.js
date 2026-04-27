@@ -1,6 +1,11 @@
 const { scoreMealEnvironment } = require("../utils/sustainabilityScoring");
 const { scoreNutrition } = require("../utils/nutritionScoring");
-const { scorePreferenceFit, scoreRecommendation } = require("../utils/preferenceScoring");
+const {
+  scorePreferenceFit,
+  scoreRecommendation,
+  isMealAllowed,
+  compareMealsForUser
+} = require("../utils/preferenceScoring");
 const { buildWhyRecommended } = require("../utils/explanationLogic");
 
 function scoreDormMeal(meal, userPreferences = {}) {
@@ -53,7 +58,8 @@ function scoreDormMeal(meal, userPreferences = {}) {
 function scoreDormMeals(meals, userPreferences = {}) {
   return meals
     .map(meal => scoreDormMeal(meal, userPreferences))
-    .sort((a, b) => b.recommendationScore - a.recommendationScore);
+    .filter(meal => isMealAllowed(meal, userPreferences))
+    .sort((a, b) => compareMealsForUser(a, b, userPreferences));
 }
 
 module.exports = {
