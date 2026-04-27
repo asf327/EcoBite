@@ -1,5 +1,7 @@
 node_modules/
 client/node_modules/
+dist/
+client/dist/
 .env
 client/.env
 data/*.sqlite

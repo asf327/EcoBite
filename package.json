@@ -7,6 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
+    "build": "npm --prefix client run build && rm -rf dist && mkdir -p dist && cp -R client/dist/. dist/",
+    "postinstall": "npm --prefix client install",
     "start": "node src/server.js",
     "test:scoring": "node test.js",
     "fetch:rathbone": "python3 scripts/fetch_rathbone_menu.py"
